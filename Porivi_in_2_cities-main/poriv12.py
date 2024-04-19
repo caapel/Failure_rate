@@ -23,7 +23,7 @@ for column in common_columns:
 merged_data_by_common_columns = pd.merge(data, data2, how='outer', on=common_columns)
 
 selected_columns = [
-    "Остаточная толщина металла на участке, мм, К1",
+    "Утонение стенки, %",
     "Наличие других порывов на участке, К2",
     "Коррозионная активность грунта, К3",
     "Наличие/отсутсвие затопления (следов затопления) канала, К4",
@@ -32,9 +32,13 @@ selected_columns = [
 ]
 
 df_common = merged_data_by_common_columns[selected_columns].copy()
-
+# df_common['Утонение стенки, %'] = df_common['Утонение стенки, %'].astype(float).round().astype(int)
+# print(df_common['Утонение стенки, %'])
 # Превращаем колонки в числовой тип
-df_common['Остаточная толщина металла на участке, мм, К1'] = pd.to_numeric(df_common['Остаточная толщина металла на участке, мм, К1'], errors='coerce')
+df_common['Утонение стенки, %'] = pd.to_numeric(df_common['Утонение стенки, %'], errors='coerce')
+# df_common['Утонение стенки, %'].fillna(df_common['Утонение стенки, %'].mean(), inplace=True)
+# df_common['Утонение стенки, %'] = df_common['Утонение стенки, %'].round().astype('int8')
+df = df_common.dropna(subset=['Утонение стенки, %'], inplace=True)
 df_common['Ki (действ)'] = pd.to_numeric(df_common['Ki (действ)'], errors='coerce')
 # Кодируем строковые признаки
 df_common['Наличие других порывов на участке, К2'] = df_common['Наличие других порывов на участке, К2'].astype('category')
@@ -45,6 +49,7 @@ df_common['Наличие/отсутсвие затопления (следов 
 df_common['Наличие/отсутсвие затопления (следов затопления) канала, К4'] = df_common['Наличие/отсутсвие затопления (следов затопления) канала, К4'].cat.codes
 df_common['Наличие пересечений с коммуникациями, К5'] = df_common['Наличие пересечений с коммуникациями, К5'].astype('category')
 df_common['Наличие пересечений с коммуникациями, К5'] = df_common['Наличие пересечений с коммуникациями, К5'].cat.codes
+print(df_common['Наличие других порывов на участке, К2'])
 
 for column in df_common.columns:
         df_common[column] = pd.to_numeric(df_common[column], errors='ignore')
@@ -79,7 +84,7 @@ plt.show()
 
 # Ящики с усами для категориальных признаков
 plt.figure(figsize=(10, 6))
-for index, feature in enumerate(["Остаточная толщина металла на участке, мм, К1", "Наличие других порывов на участке, К2", "Коррозионная активность грунта, К3", "Наличие/отсутсвие затопления (следов затопления) канала, К4", "Наличие пересечений с коммуникациями, К5"]):
+for index, feature in enumerate(["Утонение стенки, %", "Наличие других порывов на участке, К2", "Коррозионная активность грунта, К3", "Наличие/отсутсвие затопления (следов затопления) канала, К4", "Наличие пересечений с коммуникациями, К5"]):
     plt.subplot(2, 3, index + 1)
     sns.boxplot(x=df_common[feature])
 plt.tight_layout
@@ -132,13 +137,13 @@ plt.xlabel('Epochs')
 plt.ylabel('MAE')
 plt.legend()
 
-plt.tight_layout()
+# plt.tight_layout()
 plt.show()
 single_row = X.iloc[0]
 print(single_row)
 # Задаем средние значения для каждой колонки
 means = {
-    "Остаточная толщина металла на участке, мм, К1": 2.300000,
+    "Утонение стенки, %": 2.300000,
     "Наличие других порывов на участке, К2": 2.000000,
     "Коррозионная активность грунта, К3": 2.000000,
     "Наличие/отсутсвие затопления (следов затопления) канала, К4": 2.000000,
@@ -153,7 +158,7 @@ df = pd.DataFrame({col: np.random.normal(mean, std_dev, 5) for col, mean in mean
 
 # Создание датафрейма с данными
 data = {
-    "Остаточная толщина металла на участке, мм, К1": np.random.normal(2.3, 0.1, 5),
+    "Утонение стенки, %": np.random.normal(2.3, 0.1, 5),
     "Наличие других порывов на участке, К2": np.random.normal(2, 0.1, 5),
     "Коррозионная активность грунта, К3": np.random.normal(2, 0.1, 5),
     "Наличие/отсутсвие затопления (следов затопления) канала, К4": np.random.normal(2, 0.1, 5),
@@ -267,3 +272,25 @@ plt.show()
 fig, ax = plt.subplots(figsize=(200, 200))
 plot_tree(best_rf.estimators_[0], filled=True, feature_names=df_common.columns.tolist(), ax=ax, fontsize=10, max_depth=4, node_ids=True)
 plt.show()
+
+# ridge_weights = ridge.coef_
+# lasso_weights = lasso.coef_
+# elastic_net_weights = elastic_net.coef_
+# rf_feature_importances = random_forest.feature_importances_
+# gb_feature_importances = gradient_boosting.feature_importances_
+# print("Ridge weights:", ridge_weights)
+# print("Lasso weights:", lasso_weights)
+# print("ElasticNet weights:", elastic_net_weights)
+# print("Random Forest feature importances:", rf_feature_importances)
+# print("Gradient Boosting feature importances:", gb_feature_importances)
+# def plot_feature_importances(importances, feature_names):
+#     indices = np.argsort(importances)
+#     plt.figure(figsize=(8, 6))
+#     plt.title('Feature Importances')
+#     plt.barh(range(len(indices)), importances[indices], color='b', align='center')
+#     plt.yticks(range(len(indices)), [feature_names[i] for i in indices])
+#     plt.xlabel('Relative Importance')
+#     plt.show()
+#
+# plot_feature_importances(rf_feature_importances, X.columns)
+# plot_feature_importances(gb_feature_importances, X.columns)

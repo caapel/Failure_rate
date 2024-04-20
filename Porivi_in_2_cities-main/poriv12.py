@@ -4,6 +4,7 @@ import tensorflow as tf
 import pandas as pd
 from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
 from sklearn.linear_model import Ridge, Lasso, ElasticNet
+from sklearn.metrics import mean_absolute_percentage_error, mean_squared_error
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
@@ -100,6 +101,8 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 
 # Дополнительное разделение обучающего набора на обучающий и валидационный наборы
 X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.25, random_state=42)  # 0.25 x 0.8 = 0.2
+
+
 
 model = tf.keras.Sequential([
     tf.keras.layers.Dense(64, activation='relu', input_dim=5),
@@ -273,24 +276,43 @@ fig, ax = plt.subplots(figsize=(200, 200))
 plot_tree(best_rf.estimators_[0], filled=True, feature_names=df_common.columns.tolist(), ax=ax, fontsize=10, max_depth=4, node_ids=True)
 plt.show()
 
-# ridge_weights = ridge.coef_
-# lasso_weights = lasso.coef_
-# elastic_net_weights = elastic_net.coef_
-# rf_feature_importances = random_forest.feature_importances_
-# gb_feature_importances = gradient_boosting.feature_importances_
-# print("Ridge weights:", ridge_weights)
-# print("Lasso weights:", lasso_weights)
-# print("ElasticNet weights:", elastic_net_weights)
-# print("Random Forest feature importances:", rf_feature_importances)
-# print("Gradient Boosting feature importances:", gb_feature_importances)
-# def plot_feature_importances(importances, feature_names):
-#     indices = np.argsort(importances)
-#     plt.figure(figsize=(8, 6))
-#     plt.title('Feature Importances')
-#     plt.barh(range(len(indices)), importances[indices], color='b', align='center')
-#     plt.yticks(range(len(indices)), [feature_names[i] for i in indices])
-#     plt.xlabel('Relative Importance')
-#     plt.show()
-#
-# plot_feature_importances(rf_feature_importances, X.columns)
-# plot_feature_importances(gb_feature_importances, X.columns)
+X_train = X_train.drop(['Наличие других порывов на участке, К2'], axis=1)
+X_test = X_test.drop(['Наличие других порывов на участке, К2'], axis=1)
+
+gb_model = GradientBoostingRegressor(learning_rate=0.01, max_depth=5, n_estimators=100, random_state=42)
+gb_model.fit(X_train, y_train)
+
+# Вывод важности признаков
+feature_importances = gb_model.feature_importances_
+features = X_train.columns
+
+plt.figure(figsize=(10, 6))
+plt.barh(range(len(features)), feature_importances, align='center')
+plt.yticks(range(len(features)), features)
+plt.xlabel('Importance')
+plt.title('Feature Importance in Gradient Boosting Model')
+plt.show()
+y_pred = gb_model.predict(X_test)
+mape = mean_absolute_percentage_error(y_test, y_pred)
+
+print(f'Mean Absolute Percentage Error (MAPE) on Test Set: {mape:.4f}')
+
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+lasso = Lasso(alpha=0.1)
+lasso.fit(X_train_scaled, y_train)
+coefficients = lasso.coef_
+
+# Вывод коэффициентов признаков
+print("Coefficients (Weights) of the Features:")
+for feature, coef in zip(X_train.columns, coefficients):
+    print(f"{feature}: {coef}")
+
+y_pred = lasso.predict(X_test_scaled)
+
+# Расчёт среднеквадратичной ошибки (MSE)
+mse = mean_squared_error(y_test, y_pred)
+mape = mean_absolute_percentage_error(y_test, y_pred)
+print("Mean Squared Error:", mse)
+

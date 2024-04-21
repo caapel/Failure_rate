@@ -4,7 +4,7 @@ import tensorflow as tf
 import pandas as pd
 from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
 from sklearn.linear_model import Ridge, Lasso, ElasticNet
-from sklearn.metrics import mean_absolute_percentage_error, mean_squared_error
+from sklearn.metrics import mean_absolute_percentage_error, mean_squared_error, mean_absolute_error
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
@@ -296,23 +296,4 @@ y_pred = gb_model.predict(X_test)
 mape = mean_absolute_percentage_error(y_test, y_pred)
 
 print(f'Mean Absolute Percentage Error (MAPE) on Test Set: {mape:.4f}')
-
-scaler = StandardScaler()
-X_train_scaled = scaler.fit_transform(X_train)
-X_test_scaled = scaler.transform(X_test)
-lasso = Lasso(alpha=0.1)
-lasso.fit(X_train_scaled, y_train)
-coefficients = lasso.coef_
-
-# Вывод коэффициентов признаков
-print("Coefficients (Weights) of the Features:")
-for feature, coef in zip(X_train.columns, coefficients):
-    print(f"{feature}: {coef}")
-
-y_pred = lasso.predict(X_test_scaled)
-
-# Расчёт среднеквадратичной ошибки (MSE)
-mse = mean_squared_error(y_test, y_pred)
-mape = mean_absolute_percentage_error(y_test, y_pred)
-print("Mean Squared Error:", mse)
 

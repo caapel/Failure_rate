@@ -1,5 +1,3 @@
-from datetime import time
-import numpy as np
 import tensorflow as tf
 import pandas as pd
 from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
@@ -33,12 +31,9 @@ selected_columns = [
 ]
 
 df_common = merged_data_by_common_columns[selected_columns].copy()
-# df_common['Утонение стенки, %'] = df_common['Утонение стенки, %'].astype(float).round().astype(int)
-# print(df_common['Утонение стенки, %'])
 # Превращаем колонки в числовой тип
 df_common['Утонение стенки, %'] = pd.to_numeric(df_common['Утонение стенки, %'], errors='coerce')
-# df_common['Утонение стенки, %'].fillna(df_common['Утонение стенки, %'].mean(), inplace=True)
-# df_common['Утонение стенки, %'] = df_common['Утонение стенки, %'].round().astype('int8')
+
 df = df_common.dropna(subset=['Утонение стенки, %'], inplace=True)
 df_common['Ki (действ)'] = pd.to_numeric(df_common['Ki (действ)'], errors='coerce')
 # Кодируем строковые признаки
@@ -140,49 +135,13 @@ plt.xlabel('Epochs')
 plt.ylabel('MAE')
 plt.legend()
 
-# plt.tight_layout()
 plt.show()
 single_row = X.iloc[0]
 print(single_row)
-# Задаем средние значения для каждой колонки
-means = {
-    "Утонение стенки, %": 2.300000,
-    "Наличие других порывов на участке, К2": 2.000000,
-    "Коррозионная активность грунта, К3": 2.000000,
-    "Наличие/отсутсвие затопления (следов затопления) канала, К4": 2.000000,
-    "Наличие пересечений с коммуникациями, К5": 2.000000
-}
 
-# Задаем небольшое стандартное отклонение для генерации близких значений
-std_dev = 0.1
-
-# Создаем датафрейм с 5 строками, значения каждой колонки генерируются вокруг среднего
-df = pd.DataFrame({col: np.random.normal(mean, std_dev, 5) for col, mean in means.items()})
-
-# Создание датафрейма с данными
-data = {
-    "Утонение стенки, %": np.random.normal(2.3, 0.1, 5),
-    "Наличие других порывов на участке, К2": np.random.normal(2, 0.1, 5),
-    "Коррозионная активность грунта, К3": np.random.normal(2, 0.1, 5),
-    "Наличие/отсутсвие затопления (следов затопления) канала, К4": np.random.normal(2, 0.1, 5),
-    "Наличие пересечений с коммуникациями, К5": np.random.normal(2, 0.1, 5),
-}
-
-df_predict = pd.DataFrame(data)
-
-# Выводим созданный датафрейм
-print(df)
-predictions = model.predict(df_predict)
-
-# Вывод предсказаний
-print(predictions)
-# Оценка производительности модели на тестовых данных
 test_loss, test_mae, test_mape = model.evaluate(X_test, y_test)
 
-# from sklearn.metrics import mean_absolute_percentage_error
-#
-# mape = mean_absolute_percentage_error(y_test, predictions)
-# print('MAPE:', mape)
+
 print(f'Test Loss: {test_loss}, Test MAE: {test_mae}, Test MAPE: {test_mape}')
 
 model = Pipeline([
@@ -238,7 +197,7 @@ gb_params = {
 # Параметры для GridSearchCV Random Forest
 rf_params = {
     'regressor__n_estimators': [100, 200, 300],
-    'regressor__max_features': ['auto', 'sqrt', 'log2'],
+    'regressor__max_features': ['sqrt', 'log2'],
     'regressor__max_depth': [5, 10, 15]
 }
 

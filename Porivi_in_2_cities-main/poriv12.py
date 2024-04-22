@@ -253,6 +253,10 @@ plt.title('Feature Importance in Gradient Boosting Model')
 plt.show()
 y_pred = gb_model.predict(X_test)
 mape = mean_absolute_percentage_error(y_test, y_pred)
+mae = mean_absolute_error(y_test, y_pred)
+mse = mean_squared_error(y_test, y_pred)
 
 print(f'Mean Absolute Percentage Error (MAPE) on Test Set: {mape:.4f}')
+print(f'Mean Absolute Error (MAE) on Test Set: {mae:.4f}')
+print(f'Mean Squared Error (MSE) on Test Set: {mse:.4f}')
 

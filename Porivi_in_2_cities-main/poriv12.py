@@ -2,7 +2,7 @@ import tensorflow as tf
 import pandas as pd
 from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
 from sklearn.linear_model import Ridge, Lasso, ElasticNet
-from sklearn.metrics import mean_absolute_percentage_error, mean_squared_error, mean_absolute_error
+from sklearn.metrics import mean_absolute_percentage_error, mean_squared_error, mean_absolute_error, r2_score
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
@@ -25,7 +25,7 @@ selected_columns = [
     "Утонение стенки, %",
     "Наличие других порывов на участке, К2",
     "Коррозионная активность грунта, К3",
-    "Наличие/отсутсвие затопления (следов затопления) канала, К4",
+    "Наличие/отсутствие затопления (следов затопления) канала, К4",
     "Наличие пересечений с коммуникациями, К5",
     "Ki (действ)"
 ]
@@ -41,8 +41,8 @@ df_common['Наличие других порывов на участке, К2']
 df_common['Наличие других порывов на участке, К2'] = df_common['Наличие других порывов на участке, К2'].cat.codes
 df_common['Коррозионная активность грунта, К3'] = df_common['Коррозионная активность грунта, К3'].astype('category')
 df_common['Коррозионная активность грунта, К3'] = df_common['Коррозионная активность грунта, К3'].cat.codes
-df_common['Наличие/отсутсвие затопления (следов затопления) канала, К4'] = df_common['Наличие/отсутсвие затопления (следов затопления) канала, К4'].astype('category')
-df_common['Наличие/отсутсвие затопления (следов затопления) канала, К4'] = df_common['Наличие/отсутсвие затопления (следов затопления) канала, К4'].cat.codes
+df_common['Наличие/отсутствие затопления (следов затопления) канала, К4'] = df_common['Наличие/отсутствие затопления (следов затопления) канала, К4'].astype('category')
+df_common['Наличие/отсутствие затопления (следов затопления) канала, К4'] = df_common['Наличие/отсутствие затопления (следов затопления) канала, К4'].cat.codes
 df_common['Наличие пересечений с коммуникациями, К5'] = df_common['Наличие пересечений с коммуникациями, К5'].astype('category')
 df_common['Наличие пересечений с коммуникациями, К5'] = df_common['Наличие пересечений с коммуникациями, К5'].cat.codes
 print(df_common['Наличие других порывов на участке, К2'])
@@ -61,6 +61,15 @@ for column in df_common.columns:
     if df_common[column].dtype == 'object':
         df_common.loc[:, column] = df_common[column].astype('category')
 
+df_common = df_common.sort_values(by = 'Ki (действ)', ascending=True)
+df_common.reset_index(drop= True, inplace=True)
+df_common = df_common.iloc[5:85]
+df_common.reset_index(drop= True, inplace=True)
+print(df_common)
+
+df_common = df_common.iloc[3:90]
+df_common.reset_index(drop= True, inplace=True)
+df_common
 
 print(df_common.info())
 print(df_common.shape)
@@ -80,7 +89,7 @@ plt.show()
 
 # Ящики с усами для категориальных признаков
 plt.figure(figsize=(10, 6))
-for index, feature in enumerate(["Утонение стенки, %", "Наличие других порывов на участке, К2", "Коррозионная активность грунта, К3", "Наличие/отсутсвие затопления (следов затопления) канала, К4", "Наличие пересечений с коммуникациями, К5"]):
+for index, feature in enumerate(["Утонение стенки, %", "Наличие других порывов на участке, К2", "Коррозионная активность грунта, К3", "Наличие/отсутствие затопления (следов затопления) канала, К4", "Наличие пересечений с коммуникациями, К5"]):
     plt.subplot(2, 3, index + 1)
     sns.boxplot(x=df_common[feature])
 plt.tight_layout
@@ -104,11 +113,11 @@ model = tf.keras.Sequential([
     tf.keras.layers.Dense(32, activation='relu'),
     tf.keras.layers.Dense(1)
 ])
-model.compile(optimizer='adam', loss='mean_squared_error', metrics=['mae', 'mape'])
-# model.fit(X_train, y_train, epochs=50, batch_size=32, validation_split=0.2)
+model.compile(optimizer='adam', loss='mean_squared_error', metrics=['mae', 'mape', 'mse'])
+
 
 history = model.fit(X_train, y_train, epochs=50, batch_size=32, validation_data=(X_val, y_val))
-
+model.predict(X_train)
 # Получение истории потерь и MAE
 loss = history.history['loss']
 val_loss = history.history['val_loss']
@@ -139,10 +148,9 @@ plt.show()
 single_row = X.iloc[0]
 print(single_row)
 
-test_loss, test_mae, test_mape = model.evaluate(X_test, y_test)
+test_loss, test_mae, test_mape, test_mse = model.evaluate(X_test, y_test)
 
-
-print(f'Test Loss: {test_loss}, Test MAE: {test_mae}, Test MAPE: {test_mape}')
+print(f'Test Loss: {test_loss}, Test MAE: {test_mae}, Test MAPE: {test_mape}, Test MSE: {test_mse}' )
 
 model = Pipeline([
     ('scaler', StandardScaler()),
@@ -251,12 +259,55 @@ plt.yticks(range(len(features)), features)
 plt.xlabel('Importance')
 plt.title('Feature Importance in Gradient Boosting Model')
 plt.show()
+predictions = {}
+errors = {}
+
 y_pred = gb_model.predict(X_test)
+predictions['gb_model'] = y_pred
+
 mape = mean_absolute_percentage_error(y_test, y_pred)
 mae = mean_absolute_error(y_test, y_pred)
 mse = mean_squared_error(y_test, y_pred)
+errors['gb_model'] = mape
 
 print(f'Mean Absolute Percentage Error (MAPE) on Test Set: {mape:.4f}')
 print(f'Mean Absolute Error (MAE) on Test Set: {mae:.4f}')
 print(f'Mean Squared Error (MSE) on Test Set: {mse:.4f}')
+print(df_common.shape)
+
+
+from sklearn.svm import SVR
+
+param_grid = {
+    'C': [0.1, 1, 10, 100],  # Регуляризационный параметр
+    'gamma': ['scale', 'auto', 0.01, 0.1, 1],  # Параметр ядра
+    'epsilon': [0.01, 0.1, 0.2, 0.5, 1],  # Параметр маржи
+    'kernel': ['rbf', 'linear', 'poly']  # Тип ядра
+}
+svr = SVR()
+
+
+grid_search = GridSearchCV(estimator=svr, param_grid=param_grid, cv=5, scoring='neg_mean_squared_error', verbose=2, n_jobs=-1)
+
+# Обучение модели
+grid_search.fit(X_train, y_train)
+
+
+print("Лучшие параметры:", grid_search.best_params_)
+best_svr = grid_search.best_estimator_
+
+y_pred = best_svr.predict(X_test)
+predictions['svr'] = y_pred
+
+mse = mean_squared_error(y_test, y_pred)
+mae = mean_absolute_error(y_test, y_pred)
+mape = mean_absolute_percentage_error(y_test, y_pred)
+r2 = r2_score(y_test, y_pred)
+errors['svr'] = mape
+print(f"Mean Squared Error: {mse}")
+print(f"Mean Absolute Error: {mae}")
+print(f"Mean Absolute Percentage Error: {mape}")
+print(f"R^2 Score: {r2}")
+
+
 
